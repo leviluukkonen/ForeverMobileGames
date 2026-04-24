@@ -416,13 +416,13 @@ function AddGameForm({ onAdd, isAuthenticated, onAuthenticate }: { onAdd: (title
 
 function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-[#1A1A1A]/95 backdrop-blur-md"
+        className="absolute inset-0 bg-black/98"
       />
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -430,14 +430,15 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
         exit={{ scale: 0.9 }}
         className="relative bg-black w-full h-full max-w-[1600px] flex flex-col shadow-2xl overflow-hidden md:rounded-3xl border-0 md:border-2 border-white/10"
       >
-        <div className="flex items-center justify-between p-3 sm:p-4 bg-[#1A1A1A] border-b border-white/5">
+        {/* Header - Hidden on small mobile in portrait, visible on larger screens */}
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-[#1A1A1A] border-b border-white/5 sm:flex">
            <div className="flex items-center gap-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 border border-white/10 rounded-full flex items-center justify-center overflow-hidden bg-black shadow-inner">
                 <img src={`https://uploads.scratch.mit.edu/get_image/project/${game.projectId}_480x360.png`} className="w-full h-full object-cover" />
               </div>
               <div>
-                <h2 className="text-white font-bold leading-tight uppercase tracking-tight text-xs sm:text-sm truncate max-w-[120px] sm:max-w-md">{game.title}</h2>
-                <p className="text-[8px] sm:text-[9px] font-mono text-white/40 uppercase tracking-widest leading-none mt-0.5">Project #{game.projectId}</p>
+                <h2 className="text-white font-bold leading-tight uppercase tracking-tight text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-md">{game.title}</h2>
+                <p className="text-[7px] sm:text-[9px] font-mono text-white/40 uppercase tracking-widest leading-none mt-0.5">Project #{game.projectId}</p>
               </div>
            </div>
            
@@ -452,15 +453,16 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
               </a>
               <button
                 onClick={onClose}
-                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#FF6B6B] hover:border-[#FF6B6B]/20 transition-all bg-white/5"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#FF6B6B] hover:border-[#FF6B6B]/20 transition-all bg-white/5"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
            </div>
         </div>
 
-        <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
-          <div className="w-full h-full flex items-center justify-center">
+        {/* Game Container - Absolute fill on mobile, centered aspect on desktop */}
+        <div className="flex-1 relative bg-black overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center p-0 md:p-8">
             <iframe
               src={`https://scratch.mit.edu/projects/${game.projectId}/embed?autostart=true`}
               allowTransparency={true}
@@ -470,18 +472,27 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
               scrolling="no"
               allowFullScreen
               allow="autoplay; fullscreen; microphone; camera; gamepad"
-              className="max-h-full max-w-full aspect-[4/3] shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
+              className="w-full h-full md:max-h-full md:max-w-full md:aspect-[4/3] shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
             ></iframe>
           </div>
+          
+          {/* Floating close button for mobile when header is too cramped */}
+          <button
+            onClick={onClose}
+            className="sm:hidden absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
+          >
+            <X size={24} />
+          </button>
         </div>
 
-        <div className="p-3 sm:p-4 bg-[#1A1A1A]/80 backdrop-blur-md flex justify-between items-center px-6 border-t border-white/5">
+        {/* Footer - Only on desktops */}
+        <div className="hidden md:flex p-3 sm:p-4 bg-[#1A1A1A]/80 backdrop-blur-md justify-between items-center px-6 border-t border-white/5">
            <div className="flex gap-6 items-center">
               <div className="flex flex-col">
                 <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Added</span>
                 <span className="text-white/50 font-bold text-[9px] uppercase">{new Date(game.addedAt).toLocaleDateString()}</span>
               </div>
-              <div className="hidden sm:flex flex-col">
+              <div className="flex flex-col">
                 <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Controls</span>
                 <span className="text-white/50 font-bold text-[9px] uppercase flex items-center gap-1">Touch Ready <Smartphone size={10} /></span>
               </div>
