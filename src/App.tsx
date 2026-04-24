@@ -5,11 +5,15 @@ import { Game } from './types';
 
 export default function App() {
   const [games, setGames] = useState<Game[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<{ open: boolean; gameId: string | null }>({ open: false, gameId: null });
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
   useEffect(() => {
+    const auth = localStorage.getItem('is-authenticated');
+    if (auth === 'true') setIsAuthenticated(true);
+
     const savedGames = localStorage.getItem('forever-mobile-games');
     if (savedGames) {
       try {
@@ -23,6 +27,11 @@ export default function App() {
   const saveGames = (newGames: Game[]) => {
     setGames(newGames);
     localStorage.setItem('forever-mobile-games', JSON.stringify(newGames));
+  };
+
+  const setAuthenticated = (val: boolean) => {
+    setIsAuthenticated(val);
+    localStorage.setItem('is-authenticated', val ? 'true' : 'false');
   };
 
   const extractProjectId = (url: string) => {
@@ -171,7 +180,11 @@ export default function App() {
       <AnimatePresence>
         {showAddModal && (
           <Modal onClose={() => setShowAddModal(false)}>
-            <AddGameForm onAdd={handleAddGame} />
+            <AddGameForm 
+              onAdd={handleAddGame} 
+              isAuthenticated={isAuthenticated} 
+              onAuthenticate={() => setAuthenticated(true)} 
+            />
           </Modal>
         )}
         {selectedGame && (
@@ -182,6 +195,8 @@ export default function App() {
             <DeleteConfirmForm 
               onDelete={() => showDeleteModal.gameId && handleDeleteGame(showDeleteModal.gameId)} 
               onCancel={() => setShowDeleteModal({ open: false, gameId: null })}
+              isAuthenticated={isAuthenticated}
+              onAuthenticate={() => setAuthenticated(true)}
             />
           </Modal>
         )}
@@ -218,17 +233,44 @@ function Modal({ children, onClose }: { children: ReactNode; onClose: () => void
   );
 }
 
-function DeleteConfirmForm({ onDelete, onCancel }: { onDelete: () => void; onCancel: () => void }) {
+function DeleteConfirmForm({ onDelete, onCancel, isAuthenticated, onAuthenticate }: { onDelete: () => void; onCancel: () => void; isAuthenticated: boolean; onAuthenticate: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const checkPassword = () => {
     if (password === 'P271TLimlamswsIf?') {
+      onAuthenticate();
       onDelete();
     } else {
       setError('Incorrect password.');
     }
   };
+
+  if (isAuthenticated) {
+    return (
+      <div className="p-8 sm:p-12 text-center">
+        <div className="w-16 h-16 bg-[#FF6B6B] border-2 border-[#1A1A1A] rounded-full flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+          <AlertCircle size={32} className="text-white" />
+        </div>
+        <h2 className="text-3xl font-black uppercase tracking-tight mb-2">Delete Game?</h2>
+        <p className="text-[#1A1A1A]/60 mb-8">Are you sure you want to remove this project? This cannot be undone.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={onCancel}
+            className="py-4 bg-[#F9F7F2] border-2 border-[#1A1A1A] font-black uppercase tracking-widest rounded-xl hover:bg-gray-100 transition-all"
+          >
+            Go Back
+          </button>
+          <button
+            onClick={onDelete}
+            className="py-4 bg-[#FF6B6B] text-white border-2 border-[#1A1A1A] font-black uppercase tracking-widest rounded-xl shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] transition-all"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 sm:p-12 text-center">
@@ -268,8 +310,8 @@ function DeleteConfirmForm({ onDelete, onCancel }: { onDelete: () => void; onCan
   );
 }
 
-function AddGameForm({ onAdd }: { onAdd: (title: string, url: string) => void }) {
-  const [step, setStep] = useState(0); // 0: Password, 1: Details
+function AddGameForm({ onAdd, isAuthenticated, onAuthenticate }: { onAdd: (title: string, url: string) => void; isAuthenticated: boolean; onAuthenticate: () => void }) {
+  const [step, setStep] = useState(isAuthenticated ? 1 : 0); // 0: Password, 1: Details
   const [password, setPassword] = useState('');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -277,6 +319,7 @@ function AddGameForm({ onAdd }: { onAdd: (title: string, url: string) => void })
 
   const checkPassword = () => {
     if (password === 'P271TLimlamswsIf?') {
+      onAuthenticate();
       setStep(1);
       setError('');
     } else {
@@ -382,62 +425,73 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
         className="absolute inset-0 bg-[#1A1A1A]/95 backdrop-blur-md"
       />
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="relative bg-[#1A1A1A] w-full max-w-5xl aspect-video sm:aspect-[16/10] flex flex-col shadow-2xl border-x-0 sm:border-4 border-white/10"
+        exit={{ scale: 0.9 }}
+        className="relative bg-black w-full h-full max-w-[1600px] flex flex-col shadow-2xl overflow-hidden md:rounded-3xl border-0 md:border-2 border-white/10"
       >
-        <div className="flex items-center justify-between p-4 border-b border-white/5">
-           <div className="flex items-center gap-4">
-              <div className="w-10 h-10 border border-white/20 rounded-full flex items-center justify-center overflow-hidden">
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-[#1A1A1A] border-b border-white/5">
+           <div className="flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 border border-white/10 rounded-full flex items-center justify-center overflow-hidden bg-black shadow-inner">
                 <img src={`https://uploads.scratch.mit.edu/get_image/project/${game.projectId}_480x360.png`} className="w-full h-full object-cover" />
               </div>
               <div>
-                <h2 className="text-white font-bold leading-tight uppercase tracking-tight">{game.title}</h2>
-                <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest leading-none mt-1">Scratch Project #{game.projectId}</p>
+                <h2 className="text-white font-bold leading-tight uppercase tracking-tight text-xs sm:text-sm truncate max-w-[120px] sm:max-w-md">{game.title}</h2>
+                <p className="text-[8px] sm:text-[9px] font-mono text-white/40 uppercase tracking-widest leading-none mt-0.5">Project #{game.projectId}</p>
               </div>
            </div>
-           <button
-              onClick={onClose}
-              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/40 hover:text-white transition-colors"
-            >
-              <X size={20} />
-            </button>
+           
+           <div className="flex items-center gap-3">
+              <a
+                href={`https://scratch.mit.edu/projects/${game.projectId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-[9px] tracking-widest rounded-full transition-all border border-white/5"
+              >
+                Scratch Page
+              </a>
+              <button
+                onClick={onClose}
+                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#FF6B6B] hover:border-[#FF6B6B]/20 transition-all bg-white/5"
+              >
+                <X size={20} />
+              </button>
+           </div>
         </div>
 
-        <div className="flex-1 relative bg-black">
-          <iframe
-            src={`https://scratch.mit.edu/projects/${game.projectId}/embed?autostart=false`}
-            allowTransparency={true}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            scrolling="no"
-            allowFullScreen
-            className="absolute inset-0"
-          ></iframe>
+        <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
+          <div className="w-full h-full flex items-center justify-center">
+            <iframe
+              src={`https://scratch.mit.edu/projects/${game.projectId}/embed?autostart=true`}
+              allowTransparency={true}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              scrolling="no"
+              allowFullScreen
+              allow="autoplay; fullscreen; microphone; camera; gamepad"
+              className="max-h-full max-w-full aspect-[4/3] shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
+            ></iframe>
+          </div>
         </div>
 
-        <div className="p-4 sm:p-6 bg-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-           <div className="flex gap-6 items-center order-2 sm:order-1">
+        <div className="p-3 sm:p-4 bg-[#1A1A1A]/80 backdrop-blur-md flex justify-between items-center px-6 border-t border-white/5">
+           <div className="flex gap-6 items-center">
               <div className="flex flex-col">
-                <span className="text-[10px] font-mono uppercase text-white/30 tracking-widest">Added</span>
-                <span className="text-white/80 font-bold text-xs">{new Date(game.addedAt).toLocaleDateString()}</span>
+                <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Added</span>
+                <span className="text-white/50 font-bold text-[9px] uppercase">{new Date(game.addedAt).toLocaleDateString()}</span>
               </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono uppercase text-white/30 tracking-widest">Platform</span>
-                <span className="text-white/80 font-bold text-xs flex items-center gap-1"><Smartphone size={12} /> Mobile Ready</span>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Controls</span>
+                <span className="text-white/50 font-bold text-[9px] uppercase flex items-center gap-1">Touch Ready <Smartphone size={10} /></span>
               </div>
            </div>
-           <a
-             href={`https://scratch.mit.edu/projects/${game.projectId}`}
-             target="_blank"
-             rel="noopener noreferrer"
-             className="px-8 py-3 bg-[#FFD166] text-[#1A1A1A] font-black uppercase text-xs tracking-widest rounded-full hover:scale-105 transition-transform order-1 sm:order-2"
+           <button 
+             onClick={onClose}
+             className="px-8 py-2.5 bg-[#FFD166] hover:bg-[#FFD166]/90 text-[#1A1A1A] font-black uppercase text-[10px] tracking-widest rounded-full transition-all shadow-[0_4px_0_0_#CB9D31] active:translate-y-1 active:shadow-none"
            >
-             View on Scratch
-           </a>
+             Exit Theater
+           </button>
         </div>
       </motion.div>
     </div>
