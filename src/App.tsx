@@ -1,6 +1,17 @@
-import { useState, useEffect, type ReactNode, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type ReactNode, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Gamepad2, AlertCircle, X, ShieldCheck, ChevronRight, Laptop, Smartphone } from 'lucide-react';
+import { 
+  Plus, 
+  Gamepad2, 
+  AlertCircle, 
+  X, 
+  ShieldCheck, 
+  ChevronRight, 
+  Laptop, 
+  Smartphone,
+  Maximize,
+  Minimize
+} from 'lucide-react';
 import { Game } from './types';
 
 export default function App() {
@@ -415,6 +426,31 @@ function AddGameForm({ onAdd, isAuthenticated, onAuthenticate }: { onAdd: (title
 }
 
 function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+    
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Error attempting to toggle fullscreen:', err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <motion.div
@@ -425,44 +461,53 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
         className="absolute inset-0 bg-black/98"
       />
       <motion.div
+        ref={containerRef}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9 }}
-        className="relative bg-black w-full h-full max-w-[1600px] flex flex-col shadow-2xl overflow-hidden md:rounded-3xl border-0 md:border-2 border-white/10"
+        className={`relative bg-black w-full h-full flex flex-col shadow-2xl overflow-hidden ${isFullscreen ? '' : 'max-w-[1600px] md:rounded-3xl md:border-2 border-white/10'}`}
       >
-        {/* Header - Hidden on small mobile in portrait, visible on larger screens */}
-        <div className="flex items-center justify-between p-3 sm:p-4 bg-[#1A1A1A] border-b border-white/5 sm:flex">
-           <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 border border-white/10 rounded-full flex items-center justify-center overflow-hidden bg-black shadow-inner">
-                <img src={`https://uploads.scratch.mit.edu/get_image/project/${game.projectId}_480x360.png`} className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <h2 className="text-white font-bold leading-tight uppercase tracking-tight text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-md">{game.title}</h2>
-                <p className="text-[7px] sm:text-[9px] font-mono text-white/40 uppercase tracking-widest leading-none mt-0.5">Project #{game.projectId}</p>
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-3">
-              <a
-                href={`https://scratch.mit.edu/projects/${game.projectId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:flex px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-[9px] tracking-widest rounded-full transition-all border border-white/5"
-              >
-                Scratch Page
-              </a>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#FF6B6B] hover:border-[#FF6B6B]/20 transition-all bg-white/5"
-              >
-                <X size={18} />
-              </button>
-           </div>
-        </div>
+        {/* Header - Hidden in fullscreen or small screens */}
+        {!isFullscreen && (
+          <div className="flex items-center justify-between p-3 sm:p-4 bg-[#1A1A1A] border-b border-white/5">
+             <div className="flex items-center gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 border border-white/10 rounded-full flex items-center justify-center overflow-hidden bg-black shadow-inner">
+                  <img src={`https://uploads.scratch.mit.edu/get_image/project/${game.projectId}_480x360.png`} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h2 className="text-white font-bold leading-tight uppercase tracking-tight text-[10px] sm:text-sm truncate max-w-[120px] sm:max-w-md">{game.title}</h2>
+                  <p className="text-[7px] sm:text-[9px] font-mono text-white/40 uppercase tracking-widest leading-none mt-0.5">Project #{game.projectId}</p>
+                </div>
+             </div>
+             
+             <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={toggleFullscreen}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-[9px] tracking-widest rounded-full transition-all border border-white/5"
+                >
+                  <Maximize size={14} /> Fullscreen
+                </button>
+                <a
+                  href={`https://scratch.mit.edu/projects/${game.projectId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold uppercase text-[9px] tracking-widest rounded-full transition-all border border-white/5"
+                >
+                  Scratch Page
+                </a>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#FF6B6B] hover:border-[#FF6B6B]/20 transition-all bg-white/5"
+                >
+                  <X size={18} />
+                </button>
+             </div>
+          </div>
+        )}
 
-        {/* Game Container - Absolute fill on mobile, centered aspect on desktop */}
+        {/* Game Container - Absolute fill */}
         <div className="flex-1 relative bg-black overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center p-0 md:p-8">
+          <div className={`absolute inset-0 flex items-center justify-center ${isFullscreen ? 'p-0' : 'p-0 md:p-8'}`}>
             <iframe
               src={`https://scratch.mit.edu/projects/${game.projectId}/embed?autostart=true`}
               allowTransparency={true}
@@ -472,38 +517,56 @@ function GameModal({ game, onClose }: { game: Game; onClose: () => void }) {
               scrolling="no"
               allowFullScreen
               allow="autoplay; fullscreen; microphone; camera; gamepad"
-              className="w-full h-full md:max-h-full md:max-w-full md:aspect-[4/3] shadow-[0_0_100px_rgba(0,0,0,1)] z-10"
+              className={`w-full h-full z-10 ${isFullscreen ? '' : 'md:max-h-full md:max-w-full md:aspect-[4/3] shadow-[0_0_100px_rgba(0,0,0,1)]'}`}
             ></iframe>
           </div>
           
-          {/* Floating close button for mobile when header is too cramped */}
-          <button
-            onClick={onClose}
-            className="sm:hidden absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white backdrop-blur-md"
-          >
-            <X size={24} />
-          </button>
+          {/* Floating controls for mobile / fullscreen */}
+          <div className="absolute top-4 right-4 z-50 flex gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className={`w-10 h-10 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white backdrop-blur-md transition-opacity ${isFullscreen ? 'opacity-20 hover:opacity-100' : 'sm:hidden'}`}
+            >
+              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+            </button>
+            <button
+              onClick={onClose}
+              className={`w-10 h-10 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white backdrop-blur-md transition-opacity ${isFullscreen ? 'opacity-20 hover:opacity-100' : 'sm:hidden'}`}
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
-        {/* Footer - Only on desktops */}
-        <div className="hidden md:flex p-3 sm:p-4 bg-[#1A1A1A]/80 backdrop-blur-md justify-between items-center px-6 border-t border-white/5">
-           <div className="flex gap-6 items-center">
-              <div className="flex flex-col">
-                <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Added</span>
-                <span className="text-white/50 font-bold text-[9px] uppercase">{new Date(game.addedAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Controls</span>
-                <span className="text-white/50 font-bold text-[9px] uppercase flex items-center gap-1">Touch Ready <Smartphone size={10} /></span>
-              </div>
-           </div>
-           <button 
-             onClick={onClose}
-             className="px-8 py-2.5 bg-[#FFD166] hover:bg-[#FFD166]/90 text-[#1A1A1A] font-black uppercase text-[10px] tracking-widest rounded-full transition-all shadow-[0_4px_0_0_#CB9D31] active:translate-y-1 active:shadow-none"
-           >
-             Exit Theater
-           </button>
-        </div>
+        {/* Footer - Only on desktops when not in fullscreen */}
+        {!isFullscreen && (
+          <div className="hidden md:flex p-3 sm:p-4 bg-[#1A1A1A]/80 backdrop-blur-md justify-between items-center px-6 border-t border-white/5">
+             <div className="flex gap-6 items-center">
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Added</span>
+                  <span className="text-white/50 font-bold text-[9px] uppercase">{new Date(game.addedAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-mono uppercase text-white/20 tracking-widest">Controls</span>
+                  <span className="text-white/50 font-bold text-[9px] uppercase flex items-center gap-1">Touch Ready <Smartphone size={10} /></span>
+                </div>
+             </div>
+             <div className="flex gap-4">
+               <button 
+                 onClick={toggleFullscreen}
+                 className="px-8 py-2.5 bg-white/5 hover:bg-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-full transition-all border border-white/10"
+               >
+                 Go Fullscreen
+               </button>
+               <button 
+                 onClick={onClose}
+                 className="px-8 py-2.5 bg-[#FFD166] hover:bg-[#FFD166]/90 text-[#1A1A1A] font-black uppercase text-[10px] tracking-widest rounded-full transition-all shadow-[0_4px_0_0_#CB9D31] active:translate-y-1 active:shadow-none"
+               >
+                 Exit Theater
+               </button>
+             </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );
